@@ -6,7 +6,7 @@ class RTL433Line {
     /**
      * The RegEx used to extract the components from our line.
      */
-    protected static string $decodeRegex = '/\[(\d+)\] \{ *(\d+) *\} ([0-9a-f ]+) : ([01 ]+)/i';
+    protected static string $decodeRegex = '/\[(\d+)\] \{ *(\d+) *\} ([0-9a-f ]+)(?: : ([01 ]+))?/i'; //'/\[(\d+)\] \{ *(\d+) *\} ([0-9a-f ]+) : ([01 ]+)/i';
 
     /**
      * The line index relative to the full block, from zero.
@@ -47,7 +47,7 @@ class RTL433Line {
             $this->lineIndex = $matches[ 1 ]; // Number inside square brackets
             $this->bitLength = $matches[ 2 ]; // Number inside curly braces
             $this->rawHexGroups = trim( $matches[ 3 ] ); // Hexadecimal groups, trimmed to remove trailing space
-            $this->rawBinGroups = trim( $matches[ 4 ] ); // Binary groups, trimmed to remove trailing space
+            $this->rawBinGroups = trim( @$matches[ 4 ] ?? "" ); // Binary groups, trimmed to remove trailing space. This may be empty.
         } else {
             throw new \Exception( "Failed to decode line: \"" . $this->rawLineData . "\"" );
         }

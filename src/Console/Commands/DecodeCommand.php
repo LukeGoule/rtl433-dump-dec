@@ -87,7 +87,7 @@ class DecodeCommand extends Command {
         // }
 
         // Open a file in write mode ('w')
-        $file = fopen('./data/test.csv', 'w');
+        $file = fopen('./data/' . time() . '.csv', 'w');
 
         // Iterate over the data and write each row to the CSV
         foreach ( $blockObjects as $id => $block ) {
@@ -95,7 +95,7 @@ class DecodeCommand extends Command {
             $block = [ "PULSE " . $id ];
             foreach ( $lines as $line ) {
                 foreach ( $line as $data ) {
-                    $block[] = $data;
+                    $block[] = sprintf( "0x%03X", $data );
                 }
             }
             fputcsv($file, $block);
