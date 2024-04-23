@@ -80,10 +80,49 @@ class DecodeCommand extends Command {
             $this->io->error( "Caught exception while decoding: " . $error->getMessage() );
             return static::FAILURE;
         }
+        
+        // foreach ( $blockObjects as $block ) {
+        //     $this->display2DNumbers( $block->getData() );
+        //     die;
+        // }
 
-        print_r( $blockObjects[ 0 ]->getLines() );
+        // Open a file in write mode ('w')
+        $file = fopen('./data/test.csv', 'w');
+
+        // Iterate over the data and write each row to the CSV
+        foreach ( $blockObjects as $id => $block ) {
+            $lines = $block->getData();
+            $block = [ "PULSE " . $id ];
+            foreach ( $lines as $line ) {
+                foreach ( $line as $data ) {
+                    $block[] = $data;
+                }
+            }
+            fputcsv($file, $block);
+        }
+
+        // Close the file
+        fclose($file);
 
         return static::SUCCESS;
+    }
+
+    /**
+     * Display a formatted 2D array from our dataset.
+     * @param array<array<int>> $twoDeeArray
+     */
+    private function display2DNumbers( array $twoDeeArray ) {
+        $out = "";
+        foreach ( $twoDeeArray as $row ) {
+            $formattedRow = "";
+            foreach ( $row as $number ) {
+                $formattedRow .= sprintf( "0x%03X, ", $number );
+            }
+            $out .= $formattedRow;
+        }
+        $out = trim( $out );
+
+        $this->io->writeln( $out );
     }
 
     /**
@@ -111,17 +150,17 @@ class DecodeCommand extends Command {
      * Cleans a blocks end data.
      */
     private function cleanBlockEnd( string $block ) : string {
-        return trim( substr( $block, 0, strpos( $block, "..." ) ) );
+        return trim( str_replace( "... Maximum number of rows reached. Message is likely truncated.", "", $block ) );
     }
 
     /**
-     * Convert our array of strings into the block objects, and run the "decode" to extract the components.
+     * Convert our array of strings into the block objects, and run the parser to extract the components.
      * @return RTL433Block[]
      */
     private function getBlockObjects( array $cleanBlockData ) : array {
         $out = [];
-        foreach ( $cleanBlockData as $_ => $block ) {
-            $out[] = ( new RTL433Block( $block ) )->decode();
+        foreach ( $cleanBlockData as $block ) {
+            $out[] = ( new RTL433Block( $block ) )->parse();
         }
 
         return $out;

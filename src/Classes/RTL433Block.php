@@ -14,15 +14,16 @@ class RTL433Block {
     /**
      * Decode our data.
      */
-    public function decode() : static {
+    public function parse() : static {
         $this->rawData = trim( $this->rawData );
         
+        $this->lines = [];
         foreach ( explode( "\n", $this->rawData ) as $rawLine ) {
             if ( ! strlen( trim( $rawLine ) ) ) {
                 continue;
             }
-            
-            $this->lines[] = ( new RTL433Line( $rawLine ) )->decode();
+
+            $this->lines[] = ( new RTL433Line( $rawLine ) )->parse();
         } 
 
         return $this;
@@ -34,5 +35,15 @@ class RTL433Block {
      */
     public function getLines() : array {
         return $this->lines;
+    }
+
+    /**
+     * Get the 2D array of data.
+     * @return array<array<int>>
+     */
+    public function getData() : array {
+        return array_map( function ( RTL433Line $rTL433Line ) {
+            return $rTL433Line->getData();
+        }, $this->getLines() );
     }
 }

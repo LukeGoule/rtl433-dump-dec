@@ -1,3 +1,6 @@
 # This is the file I'm loading from so I'm not copy-pasting constantly. 
 # The file is ignored in case I accidentally upload the signal required to unlock my car, lmfao.
 data.txt
+
+# Outputted conversions, for my own testing. Same comment as above.
+*.csv

@@ -29,6 +29,11 @@ class RTL433Line {
     protected ?string $rawBinGroups = null;
 
     /**
+     * The converted data, as integers.
+     */
+    protected ?array $data = [];
+
+    /**
      * Constructor.
      */
     public function __construct( protected string $rawLineData ) {}
@@ -36,7 +41,7 @@ class RTL433Line {
     /**
      * Decode the inputted data.
      */
-    public function decode() : static {
+    public function parse() : static {
         // Perform the pattern match
         if ( preg_match( static::$decodeRegex, $this->rawLineData, $matches ) ) {
             $this->lineIndex = $matches[ 1 ]; // Number inside square brackets
@@ -47,6 +52,18 @@ class RTL433Line {
             throw new \Exception( "Failed to decode line: \"" . $this->rawLineData . "\"" );
         }
 
+        $hexData = preg_replace('/\s+/', '', $this->rawHexGroups); // Remove spaces
+        $hexBytes = str_split($hexData, 2); // Split into bytes
+        $this->data = array_map('hexdec', $hexBytes); // Convert hex to integers
+
         return $this;
+    }
+
+    /**
+     * Get the parsed data.
+     * @return int[]
+     */
+    public function getData() : array {
+        return $this->data;
     }
 }
