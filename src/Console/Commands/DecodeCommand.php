@@ -4,6 +4,7 @@ namespace RTL433DumpDec\Console\Commands;
 
 use RTL433DumpDec\Application;
 use RTL433DumpDec\Classes\RTL433Block;
+use RTL433DumpDec\Services\EnvService;
 use RTL433DumpDec\Services\OpenAIService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -52,7 +53,7 @@ class DecodeCommand extends Command {
             return static::FAILURE;
         }
 
-        $this->io->info( "Data length: " . strlen( $data ) );
+        $this->io->comment( "Data length: " . strlen( $data ) );
 
         $blocks = $this->splitBlocks( $data );
 
@@ -61,7 +62,7 @@ class DecodeCommand extends Command {
             return static::FAILURE;
         }
 
-        $this->io->info( "Block count: " . count( $blocks ) );
+        $this->io->comment( "Block count: " . count( $blocks ) );
 
         $validatedBlocks = array_filter( $blocks, [ $this, "isBlocKValid" ] );
 
@@ -70,7 +71,7 @@ class DecodeCommand extends Command {
             return static::FAILURE;
         }
 
-        $this->io->info( "Valid block count: " . count( $validatedBlocks ) );
+        $this->io->comment( "Valid block count: " . count( $validatedBlocks ) );
 
         $cleanedBlocks = array_map( [ $this, "cleanBlockStart" ], $validatedBlocks );
         $cleanedBlocks = array_values( array_map( [ $this, "cleanBlockEnd" ], $cleanedBlocks ) );
@@ -87,20 +88,38 @@ class DecodeCommand extends Command {
             $allData[] = $block->getData();
         }
 
-        ( new OpenAIService() )->analyseData( $allData, $this->io );
+        $this->io->comment( "Writing latest CSV dump." );
+        $this->writeToCSV( $blockObjects );
 
-        die;
-        
-        // foreach ( $blockObjects as $block ) {
-        //     $this->display2DNumbers( $block->getData() );
-        //     die;
-        // }
+        if ( ! ( new EnvService )->get( "OPENAI_API_KEY" ) ){
+            $this->io->error( "OPENAI_API_KEY is missing." );
+            return static::FAILURE;
+        }
 
+        try {
+            $this->io->comment( "Attempting decode with OpenAI." );
+            $message = (new OpenAIService())->analyseData($allData);
+
+            file_put_contents( $fname = './data/' . time() . '.md', $message );
+
+            $this->io->comment( "Wrote: " . $fname );
+        } catch ( \Exception $error ) {
+            $this->io->error( "Caught exception while decoding: " . $error->getMessage() );
+        }
+
+        return static::SUCCESS;
+    }
+
+    /**
+     * @param RTL433Block[] $blocks
+     * @return void
+     */
+    private function writeToCSV( array $blocks ) {
         // Open a file in write mode ('w')
-        $file = fopen('./data/' . time() . '.csv', 'w');
+        $file = fopen($fname = './data/' . time() . '.csv', 'w');
 
         // Iterate over the data and write each row to the CSV
-        foreach ( $blockObjects as $id => $block ) {
+        foreach ( $blocks as $id => $block ) {
             $lines = $block->getData();
             $block = [ "PULSE " . $id ];
             foreach ( $lines as $line ) {
@@ -114,7 +133,7 @@ class DecodeCommand extends Command {
         // Close the file
         fclose($file);
 
-        return static::SUCCESS;
+        $this->io->comment( "Wrote: $fname" );
     }
 
     /**

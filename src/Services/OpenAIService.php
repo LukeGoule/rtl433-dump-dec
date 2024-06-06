@@ -16,18 +16,19 @@ class OpenAIService
         $this->client = \OpenAI::client( $this->loadAPIKey() );
     }
 
-    public function analyseData( array $threeDData, OutputInterface $output ) {
+    public function analyseData( array $threeDData ): ?string
+    {
         $response = $this->client->chat()->create( [
             "model" => "gpt-4o",
             "messages" => [
                 [
                     'role' => 'user',
-                    'content' => $this->encodeContextClues() . 'Analyse the following 3D array data and provide a report on patterns in the data: ' . json_encode( $threeDData )
+                    'content' => $this->encodeContextClues() . 'Analyse the following 3D array data and: 1.provide a report on patterns in the data, 2.provide insights on next steps for the user, 3.suggest methods of deeper understanding of the raw data, 4.write relevant python code to visualise the data, if applicable: ' . json_encode( $threeDData )
                 ]
             ]
         ] );
 
-        $output->writeln( $response->choices[0]->message->content );
+        return $response->choices[0]->message->content;
     }
 
     private function encodeContextClues() : string {
