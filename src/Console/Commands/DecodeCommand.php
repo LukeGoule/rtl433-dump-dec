@@ -4,6 +4,7 @@ namespace RTL433DumpDec\Console\Commands;
 
 use RTL433DumpDec\Application;
 use RTL433DumpDec\Classes\RTL433Block;
+use RTL433DumpDec\Services\OpenAIService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -80,6 +81,15 @@ class DecodeCommand extends Command {
             $this->io->error( "Caught exception while decoding: " . $error->getMessage() );
             return static::FAILURE;
         }
+
+        $allData = [];
+        foreach ( $blockObjects as $block ) {
+            $allData[] = $block->getData();
+        }
+
+        ( new OpenAIService() )->analyseData( $allData, $this->io );
+
+        die;
         
         // foreach ( $blockObjects as $block ) {
         //     $this->display2DNumbers( $block->getData() );
